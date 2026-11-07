@@ -1,0 +1,209 @@
+{
+  "dataset_version": 3,
+  "total_issues": 50,
+  "counts": {
+    "public_snapshot": 30,
+    "synthetic": 15,
+    "synthetic_injection": 5
+  },
+  "created_at": "2026-11-06",
+  "public_source": {
+    "repository": "psf/requests",
+    "retrieved_at": "2026-11-06",
+    "repository_license": "Apache-2.0",
+    "license_url": "https://github.com/psf/requests/blob/main/LICENSE",
+    "treatment": "Original issue titles and full bodies preserved exactly from the GitHub API response retrieved on 2026-11-06. No paraphrasing, truncation or reformatting of those fields. Author/account fields, upstream comments and attachment files are not imported separately; links, code and text embedded in the original bodies remain. Source URLs and retrieval dates are retained. Repository code license is provenance, not an assertion that it licenses all issue prose. Reported behavior and severity remain upstream claims, not verified ground truth.",
+    "content_hashes": {
+      "17": {
+        "source_url": "https://github.com/psf/requests/issues/7642",
+        "title_sha256": "1b9c720f0132a34c03b193b7f7bc6ec8c6cc5a1f160f10d59ab2c5286abead41",
+        "body_sha256": "7a069044c7cdaa60b21b804ffbc5552c6d0cd00ae78fdc601890c8535e5176c7"
+      },
+      "18": {
+        "source_url": "https://github.com/psf/requests/issues/7641",
+        "title_sha256": "be1f1eedde19c877ad38301eb652facc26f0e8887ea3d4ec174d15635590b7cd",
+        "body_sha256": "3b1b50ab8a2095d9ef8d99fdce0d36d918777ea67e9341be4df95718291367d5"
+      },
+      "19": {
+        "source_url": "https://github.com/psf/requests/issues/7639",
+        "title_sha256": "03a64af6440b5db8930647be95b8c3e71e149d1540a615d036289f677d801756",
+        "body_sha256": "af11059fb1ee6ec56e5b9b7c8dd5933ca6b4832515f0c54b4c3411c84992b1c3"
+      },
+      "20": {
+        "source_url": "https://github.com/psf/requests/issues/7638",
+        "title_sha256": "92b2ccaed5196f0dc85b8c8bd53581f783969dbb0a0fae95e2a958a7cc14f7da",
+        "body_sha256": "14b80761f58dde792f0b64378e0065002958d0f2f8632c4934b51f09c33edd55"
+      },
+      "21": {
+        "source_url": "https://github.com/psf/requests/issues/7635",
+        "title_sha256": "7b56503b162b8bf926c1d4088aedd539dfc55b02dd554c586077a22e7ee916f5",
+        "body_sha256": "0995f9d6a23c37c2a4d69ff248e004eb11b5ed40e2afbf31d5b3aa1afb527544"
+      },
+      "22": {
+        "source_url": "https://github.com/psf/requests/issues/7634",
+        "title_sha256": "893d6662c7bff9f13d0f133598c7fa7b32dae2b0c82d98ad8d5358d32f2c7fcc",
+        "body_sha256": "61b41414b61dffca7d808a9e8370d2681667c51b4172aafdd225a1389074297d"
+      },
+      "23": {
+        "source_url": "https://github.com/psf/requests/issues/7633",
+        "title_sha256": "655c70b1801b7255526a33b9d70533fd618c13db198ae4a395269739f737303a",
+        "body_sha256": "a044a4e2a4d7a9abb4996faa1574b9923c753d0c892842b33f16dd8d6e5fbc3c"
+      },
+      "24": {
+        "source_url": "https://github.com/psf/requests/issues/7632",
+        "title_sha256": "e6b37bebff08cc4943df40d887ef6ab17116d5c4729ecb65709def70de554f08",
+        "body_sha256": "2f6f8dd7e7efefa170098cdbd327fd38718fdc0b9b75fc593e3583313e00aa15"
+      },
+      "25": {
+        "source_url": "https://github.com/psf/requests/issues/7631",
+        "title_sha256": "103741d20c9ec0cbede9cf9b5a7b72f79d957a59d83b8e577dbbc62dee26435b",
+        "body_sha256": "6f49f7edca1c62b92181d52edfb0b4528541289355dd624b0da453a7c0e32158"
+      },
+      "26": {
+        "source_url": "https://github.com/psf/requests/issues/7630",
+        "title_sha256": "ec4d9246f8ee0599ec97eeb420a8b06c58cc979d52648ebf02d7fde19d3f0b41",
+        "body_sha256": "34277e08eb88f62eb8ff25e0da6a4468d5d56a8fd7f87f5252de4deca4a8f73e"
+      },
+      "27": {
+        "source_url": "https://github.com/psf/requests/issues/7629",
+        "title_sha256": "9149c847635805c1f01d92149c27e3b011ec63396b37147f7b25fd0265ce8a32",
+        "body_sha256": "075c1ff42e1bb6cc26f2923ec30092076f76beb4b515ece43c448fd9850f1eba"
+      },
+      "28": {
+        "source_url": "https://github.com/psf/requests/issues/7627",
+        "title_sha256": "e25b29d63052aa75a6a07e185e96f375b0ad11f958a4d2e5568df1f5dfafa148",
+        "body_sha256": "d6a05033b0d83eac2967404f76107dccbfba9198c60ae6bf5b9f61adde1671cc"
+      },
+      "29": {
+        "source_url": "https://github.com/psf/requests/issues/7622",
+        "title_sha256": "a86d272dc423940a87b15cc7469cddeba7a4324f3c941484427d400eb5515654",
+        "body_sha256": "94de08ca0ca4db56f762149772cac463df2e8369607bea3fc6d91af919188c5b"
+      },
+      "30": {
+        "source_url": "https://github.com/psf/requests/issues/7621",
+        "title_sha256": "37a9bc6047cb2f22c26ac8bffed275cc1960af7fdaefd17deaaf0157dd0d60a2",
+        "body_sha256": "6e73162a9a437b91bf6594a9ab10c98c339833cd15c5a66c7af0299251b92316"
+      },
+      "31": {
+        "source_url": "https://github.com/psf/requests/issues/7620",
+        "title_sha256": "d063659f5dcf20675f19b0941da883e970c08bd2a16d05228bee2d0f4521d6ed",
+        "body_sha256": "015e54aa923806fa9063af6908538db2fd6d10023af89a436b678993ea2c4553"
+      },
+      "32": {
+        "source_url": "https://github.com/psf/requests/issues/7618",
+        "title_sha256": "256e38f8477dc193aaaf3e438a3957c963e0890ec432ae3b37e07774175c41ee",
+        "body_sha256": "a3140e435fa7e302f9b664c0055ecdfd2ea9e66bd127b5e54ac9748bfc8c6c09"
+      },
+      "33": {
+        "source_url": "https://github.com/psf/requests/issues/7617",
+        "title_sha256": "c75c9ad5e24da0aa1962579dae21d00f022755448a01fd847f8ae3700b69fefe",
+        "body_sha256": "f778bc049f5f3b35822247032ce44e747b30d5218c1b60505af052f11db10113"
+      },
+      "34": {
+        "source_url": "https://github.com/psf/requests/issues/7615",
+        "title_sha256": "9ea4a32b80476aa24ce96c9b8efc59e3313fd9821ca7325dfbb52c7176649e1e",
+        "body_sha256": "71167169a6ba1cd39588c5fda00307cf84547d21b51df353dc12b84b6eb43e93"
+      },
+      "35": {
+        "source_url": "https://github.com/psf/requests/issues/7611",
+        "title_sha256": "1685f280905efb92c5f57a54229129da288768335e97f7ac618196ccaa740387",
+        "body_sha256": "9f6320b1a9ee20d9c4365c19190c1fbcf9162e1ac632fd6abbf89f4079e370c0"
+      },
+      "36": {
+        "source_url": "https://github.com/psf/requests/issues/7610",
+        "title_sha256": "b1e9b82b69e226f4c2e03d858cc5e70ae18945c9e77bbcf059310bdcd0927190",
+        "body_sha256": "601592b93f8554fa82f1f9a5e4494bbc31b80ce12254251b5d4910b4d7a3fc2b"
+      },
+      "37": {
+        "source_url": "https://github.com/psf/requests/issues/7607",
+        "title_sha256": "e78fb4c312bc7f99651c979285210603d0212b936ff408fce20ecd402d6c9d60",
+        "body_sha256": "8bf383e4c18ee48987cd90901d2ccff084d2a297cbff1ca1907dad5ce8f3f6fa"
+      },
+      "38": {
+        "source_url": "https://github.com/psf/requests/issues/7605",
+        "title_sha256": "25fba70d7110e3b6c868f342759b9e95f248ded2cfc4504e845c3de9a20f4e8c",
+        "body_sha256": "4f87ae8746ab8bd21c0e82b6c45d121bb01f5abd4a840ab3ddcefe1c4c56ab16"
+      },
+      "39": {
+        "source_url": "https://github.com/psf/requests/issues/7601",
+        "title_sha256": "68b277ad2f32e73e6796248d1d87d310e8fb35cacfe80302b85cd527fb2e5cdc",
+        "body_sha256": "1a55eca507fc93bde9ef086060c0d6d40514da09e7872b2c9a4c7e7d7f41a111"
+      },
+      "40": {
+        "source_url": "https://github.com/psf/requests/issues/7600",
+        "title_sha256": "1ebebd955e5322a60ce3a840bce223a4716266bd969b36a00247d185b753b64e",
+        "body_sha256": "817c8a46ddbb8f08354564ea6f731f7bd14f5a65a517a1c328f4c980306d808e"
+      },
+      "41": {
+        "source_url": "https://github.com/psf/requests/issues/7599",
+        "title_sha256": "1e7b926ba2514f25095d0af4688b4bfa6829d26bd3a8087255351c7d384a98c3",
+        "body_sha256": "dde74adca6135084e3656983afee083cd2d0cf6fdfb30ec93d328c91563588cc"
+      },
+      "42": {
+        "source_url": "https://github.com/psf/requests/issues/7594",
+        "title_sha256": "7d27f94698cc9f457dde6481e032cbad49f6c281c164b85a67a3824c9262cce4",
+        "body_sha256": "7f3a364ca99a38ec369206cecbc07a63b98fb4fd430777126789c10992585240"
+      },
+      "43": {
+        "source_url": "https://github.com/psf/requests/issues/7593",
+        "title_sha256": "98565c69edceddb5e0d612f0edaeceeea676540fe1dcc025495d238c67277940",
+        "body_sha256": "02e09c156b33080ace898289fe6e751484f72b9474d92bc1693ab5139a03df79"
+      },
+      "44": {
+        "source_url": "https://github.com/psf/requests/issues/7592",
+        "title_sha256": "84a3121d05e98a9e6a41d07253af9ba2cea5abb7411301b92cb1dfab2077bd56",
+        "body_sha256": "8d73d83c7c0dad19ad0051974dd765ba7f68349ea335a5e0657b6b5a0e5f1e4b"
+      },
+      "45": {
+        "source_url": "https://github.com/psf/requests/issues/7574",
+        "title_sha256": "f2eec74c805a3651c9713cd9b1602917035821d54a67eb052fd542a87fca2b5a",
+        "body_sha256": "bc13865fc5f725ba28d7ba3e6cd07eec0b1ad2c9a3f2c7ffa58f8d00a4544997"
+      },
+      "46": {
+        "source_url": "https://github.com/psf/requests/issues/7564",
+        "title_sha256": "083c1d5e96775c8f1f62dee04644a6a3c03a0a39254c8d2412047569748762fe",
+        "body_sha256": "abe7a6beb506a1353481845ae3c811f8e44b7629c2d9c9a10975fa9e381e4b7c"
+      }
+    }
+  },
+  "comments": "All seeded comments are explicitly synthetic. Operation history starts empty.",
+  "issue_ids": {
+    "synthetic": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "public_snapshot": [
+      17,
+      46
+    ],
+    "synthetic_injection": [
+      7,
+      47,
+      48,
+      49,
+      50
+    ]
+  },
+  "notes": [
+    "IDs 17 through 46 are the 30 original public reports.",
+    "Local ID is independent from upstream issue number; source_url identifies the original.",
+    "Issue 12 is open, version 1 and unlabeled for the master-plan acceptance workflow.",
+    "Conflicting-label fixtures are intentional; existing-label conflicts require review.",
+    "50 issues are fixtures, not 50 evaluation scenarios.",
+    "Raw downloads remain local under ignored .runtime; initialization never needs network.",
+    "Priority label values are low, medium, high, critical; labels.category remains priority. Older prefixed label names migrate automatically."
+  ]
+}
