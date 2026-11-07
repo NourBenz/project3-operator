@@ -1,4 +1,4 @@
-﻿__pycache__/
+__pycache__/
 *.py[cod]
 .venv/
 venv/
@@ -6,3 +6,11 @@ venv/
 .env.*
 !.env.example
 .pytest_cache/
+
+sandbox/data/*
+!sandbox/data/README.md
+.runtime/
+sandbox/logs/
+
+
+docs/archive
