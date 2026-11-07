@@ -1,4 +1,4 @@
-﻿# Threat model
+# Threat model
 
 ## Assets and trust boundaries
 TODO: identify protected data, permitted actions, and untrusted inputs.

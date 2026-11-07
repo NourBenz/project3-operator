@@ -1,4 +1,4 @@
-﻿# Postmortem
+# Postmortem
 
 ## Problems encountered
 TODO

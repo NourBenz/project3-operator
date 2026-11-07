@@ -1,4 +1,4 @@
-﻿# Final report draft
+# Final report draft
 
 Maximum exported length: 4 pages. Export to report.pdf.
 
