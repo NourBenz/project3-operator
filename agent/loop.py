@@ -84,6 +84,22 @@ class TriageAgent:
                         proposal_presenter=proposal_presenter,
                     )
                     transcript.append({"kind": "tool_result", "result": {"tool": call.name, "result": result}})
+
+                    # Rejection and cancellation are terminal human decisions.
+                    error_code = (result.get("error") or {}).get("code")
+                    if error_code == "APPROVAL_DENIED":
+                        return AgentResult(
+                            task_id, "REJECTED",
+                            "Human rejected the proposed action. No write was executed.",
+                            plan, transcript, usage=usage,
+                        )
+                    if error_code == "USER_CANCELLED":
+                        return AgentResult(
+                            task_id, "CANCELLED",
+                            "Human cancelled the task. No write was executed.",
+                            plan, transcript, usage=usage,
+                        )
+
                     if pending is not None:
                         return AgentResult(task_id, "AWAITING_APPROVAL", "A human decision is required before the proposed write.", plan, transcript, pending, usage)
                     if result["error"] and result["error"].get("retryable"):

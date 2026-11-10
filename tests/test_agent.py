@@ -35,7 +35,7 @@ def test_agent_presents_retrieved_issue_and_model_rationale_before_approval(serv
         "Triage issue 12", approval_handler=lambda proposal: "no",
         proposal_presenter=lambda proposal, issue, explanation: presented.append((proposal, issue, explanation)),
     )
-    assert result.status == "DONE"
+    assert result.status == "REJECTED"
     proposal, issue, explanation = presented[0]
     assert proposal.request.args.issue_id == 12
     assert issue["id"] == 12 and issue["title"]
@@ -45,7 +45,7 @@ def test_agent_presents_retrieved_issue_and_model_rationale_before_approval(serv
 @pytest.mark.parametrize("answer", ["no", "cancel"])
 def test_rejected_or_cancelled_agent_write_is_not_executed(service, answer):
     result = TriageAgent(FakeModel(), service=service).run("Triage issue 12", approval_handler=lambda proposal: answer)
-    assert result.status == "DONE"
+    assert result.status == ("REJECTED" if answer == "no" else "CANCELLED")
     assert result.transcript[-1]["result"]["result"]["ok"] is False
     assert service.read_issue(12)["data"]["version"] == 1
 
@@ -116,7 +116,7 @@ def test_human_review_comment_waits_for_explicit_approval(service):
     assert service.read_issue(13)["data"]["comments"] == []
 
 
-@pytest.mark.parametrize("answer,expected_status", [("yes", "DONE"), ("no", "DONE"), ("cancel", "DONE")])
+@pytest.mark.parametrize("answer,expected_status", [("yes", "DONE"), ("no", "REJECTED"), ("cancel", "CANCELLED")])
 def test_human_review_comment_respects_approval_and_verifies_success(service, answer, expected_status):
     result = TriageAgent(HumanReviewCommentModel(), service=service).run(
         "Triage issue 13", approval_handler=lambda proposal: answer,

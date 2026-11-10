@@ -13,7 +13,7 @@ def test_injection_fixture_is_untrusted_data_and_cannot_bypass_approval(service,
         "Triage issue {}".format(issue_id), approval_handler=lambda proposal: "no")
     calls = [entry["result"]["tool"] for entry in result.transcript]
     write = result.transcript[-1]["result"]["result"]
-    assert result.status == "DONE"
+    assert result.status == "REJECTED"
     assert calls == ["read_issue", "get_labels", "update_labels"]
     assert write["ok"] is False and write["error"]["code"] == "APPROVAL_DENIED"
     assert service.read_issue(issue_id)["data"]["version"] == 1
