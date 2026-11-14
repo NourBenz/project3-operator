@@ -41,7 +41,7 @@ The local SQLite backend remains available for tests. The live GitHub tools have
 - **DONE - GitHub dataset seeder:** Seeded all 50 fixtures into repository issues 2-51, with marker-based duplicate detection and missing-label creation.
   Files: tools/seed_github.py, sandbox/seed_issues.json.
 
-- **PARTIAL - Owner notifications:** Added email notifications to the configured recipients after approved GitHub changes; full SMTP delivery confirmation remains.
+- **DONE - Owner notifications:** Added email notifications to the configured recipients after approved GitHub changes; the live approved write completed without notification failure.
   Files: tools/notifications.py, .env.example.
 
 - **DONE - GitHub adapter tests:** Fake-client tests cover reads, approval, notifications and exact retries; the complete tools subset passed 111 tests.

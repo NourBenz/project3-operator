@@ -52,7 +52,7 @@ The seeder uses a hidden fixture marker in each issue body to recognize existing
 
 ## Four workstreams
 
-- **TOOLS-02:** Owns the tool interface and backend behavior. The GitHub adapter and seeder are implemented; mocked API tests, SMTP verification and branch commit remain.
+- **TOOLS-02:** Owns the tool interface and backend behavior. The GitHub adapter, seeder, notifications and focused tests are complete and merged into main.
 - **AGENT-01:** Owns model integration and orchestration through mandatory LangGraph state transitions. It must use the GitHub-backed tools.
 - **EVAL-03:** Owns scenarios, metrics and traces. It must distinguish local deterministic tests from live GitHub evaluation and use mandatory LangSmith tracing.
 - **SEC-04:** Owns security, notifications and final documentation. It must review token permissions, live writes, prompt injection, logging, email behavior and LangSmith privacy.
@@ -79,9 +79,7 @@ Already clarified:
 
 Still needed:
 
-- Configure and verify SMTP delivery to the four owner addresses.
-- Add mocked GitHub API tests for failures and retries.
-- Commit and push the tools branch.
 - Connect AGENT-01's LangGraph workflow to `GitHubService`.
+- Expand GitHub failure and rate-limit evaluation under the appropriate evaluation/security workstream.
 
 Do not implement the migration, install new dependencies or create GitHub issues until the repository details and ownership are available. Review this context before the next implementation phase.
