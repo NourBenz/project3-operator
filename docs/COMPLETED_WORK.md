@@ -1,6 +1,6 @@
 # Completed work and affected files
 
-The work below is complete for the local SQLite backend. The final system now needs a GitHub API backend; the local work remains useful for tests but is not the final data source.
+The local SQLite backend remains available for tests. The live GitHub tools have now been added and tested with real repository reads and one approved label change.
 
 - **DONE - Shared contracts:** Strict tool inputs, results, write proposals, approval decisions and run state.
   Files: agent/schemas.py, tests/test_schemas.py.
@@ -35,5 +35,14 @@ The work below is complete for the local SQLite backend. The final system now ne
 - **DONE - Agent integration baseline:** OpenAI adapter, offline model, registry, bounded loop, approval flow and CLI were added by the agent workstream.
   Files: agent/llm.py, agent/loop.py, agent/main.py, agent/registry.py, agent/prompts.py.
 
-- **OPEN - Real GitHub migration:** Adapt the tool backend to read and write the repository's actual issues while preserving approval, validation, version and retry safety. LangGraph and LangSmith are mandatory for the final architecture; post-change emails are also required.
-  Files to be agreed by the TOOLS-02 owner and team after the repository link and owner email are provided.
+- **DONE - GitHub backend:** Added real issue/label/comment reads and approved writes while preserving validation, approval, operation IDs and read-back verification.
+  Files: tools/github_service.py, tools/review.py.
+
+- **DONE - GitHub dataset seeder:** Seeded all 50 fixtures into repository issues 2-51, with marker-based duplicate detection and missing-label creation.
+  Files: tools/seed_github.py, sandbox/seed_issues.json.
+
+- **PARTIAL - Owner notifications:** Added email notifications to the configured recipients after approved GitHub changes; full SMTP delivery confirmation remains.
+  Files: tools/notifications.py, .env.example.
+
+- **PARTIAL - GitHub adapter tests:** Added focused fake-client tests for reads, approval, notifications and exact retries; broader API failure tests and execution in the team runtime remain.
+  Files: tests/test_github_service.py.

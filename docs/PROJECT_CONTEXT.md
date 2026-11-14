@@ -22,7 +22,7 @@ The target implementation is:
 Python tools -> GitHub API -> real issues in this repository
 ```
 
-The SQLite backend may remain for isolated automated tests, local development and repeatable failure testing. It must not be used as the final source of issue data or final write target.
+The SQLite backend may remain for isolated automated tests, local development and repeatable failure testing. It is not the final source of issue data or final write target.
 
 The existing five-tool interface should be preserved where possible:
 
@@ -38,6 +38,8 @@ The backend migration must preserve exact human approval, input validation, safe
 
 The local TOOLS-02 implementation is complete and tested. It includes a SQLite schema, 50 fixtures, eight labels, four baseline comments, seed/reset commands, five tools, approval enforcement, version checks, operation records, transactions, errors, redacted logs and automated tests.
 
+The tools workstream now also has a GitHub API client/service, GitHub review mode, owner notification code and a repeatable issue seeder. All 50 fixtures were found in the repository as issues 2-51; issue 1 was pre-existing. A real approved label change on issue 4 was read back successfully.
+
 The agent workstream added an OpenAI adapter, offline model, tool registry, bounded decide/tool/observe loop, approval interaction, CLI and read-back verification. A real OpenAI workflow was manually demonstrated against SQLite.
 
 These results show that the local workflow works. They do not yet prove that the same workflow works against live GitHub.
@@ -46,11 +48,11 @@ These results show that the local workflow works. They do not yet prove that the
 
 The existing fixtures contain 30 public issue snapshots, 15 synthetic edge cases and five malicious test cases. The team may reuse them to create repository issues automatically, but creation must be repeatable and must not create duplicates.
 
-Before creating live issues, decide how fixtures map to GitHub issue numbers, how existing created issues are recognized, whether the repository can contain all 50, and how cleanup or reset will work. Automatic creation is preferred if it is repeatable and duplicate-safe; otherwise prepare the issue text for manual creation. Do not create live issues until the repository link, owner email and creation procedure are available.
+The seeder uses a hidden fixture marker in each issue body to recognize existing issues. It creates missing labels and issues only with `--apply`; a normal run is a dry run. The current mapping is fixture 1-50 to GitHub issues 2-51, while issue 1 is the professor's pre-existing example.
 
 ## Four workstreams
 
-- **TOOLS-02:** Owns the tool interface and backend behavior. Local SQLite work is complete; the real GitHub adapter is the main pending change for this workstream.
+- **TOOLS-02:** Owns the tool interface and backend behavior. The GitHub adapter and seeder are implemented; mocked API tests, SMTP verification and branch commit remain.
 - **AGENT-01:** Owns model integration and orchestration through mandatory LangGraph state transitions. It must use the GitHub-backed tools.
 - **EVAL-03:** Owns scenarios, metrics and traces. It must distinguish local deterministic tests from live GitHub evaluation and use mandatory LangSmith tracing.
 - **SEC-04:** Owns security, notifications and final documentation. It must review token permissions, live writes, prompt injection, logging, email behavior and LangSmith privacy.
@@ -77,9 +79,9 @@ Already clarified:
 
 Still needed:
 
-- Repository link and owner email address.
-- Whether all 50 fixtures must become real issues.
-- Whether creation may be automated or must be manual.
-- Email provider and private configuration method.
+- Configure and verify SMTP delivery to the four owner addresses.
+- Add mocked GitHub API tests for failures and retries.
+- Commit and push the tools branch.
+- Connect AGENT-01's LangGraph workflow to `GitHubService`.
 
 Do not implement the migration, install new dependencies or create GitHub issues until the repository details and ownership are available. Review this context before the next implementation phase.

@@ -7,6 +7,7 @@ from agent.approval import ApprovalError
 from agent.logging_utils import CallContext, ToolLogger
 from sandbox.database import DEFAULT_DB
 from sandbox.mock_github import MockGitHub
+from tools.github_service import GitHubService
 
 
 def main():
@@ -18,8 +19,18 @@ def main():
     parser.add_argument("--operation-id", default=None)
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     parser.add_argument("--log", type=Path, default=None)
+    parser.add_argument("--github", action="store_true", help="Use the configured live GitHub repository")
+    parser.add_argument("--repository", default=None, help="GitHub repository URL; defaults to GITHUB_REPOSITORY")
     args = parser.parse_args()
-    service = MockGitHub(args.db, logger=ToolLogger(args.log) if args.log else None)
+    logger = ToolLogger(args.log) if args.log else None
+    if args.github:
+        import os
+        repository = args.repository or os.environ.get("GITHUB_REPOSITORY")
+        if not repository:
+            parser.error("--repository or GITHUB_REPOSITORY is required with --github")
+        service = GitHubService(repository, logger=logger)
+    else:
+        service = MockGitHub(args.db, logger=logger)
     task_id = "human-" + uuid.uuid4().hex
     context = CallContext(task_id=task_id)
     before = service.read_issue(args.issue_id, context=context)
@@ -62,7 +73,7 @@ def main():
         comment["operation_id"] == payload["operation_id"] for comment in verified["data"]["comments"]
     ):
         return 1
-    print("Verified local change.")
+    print("Verified GitHub change." if args.github else "Verified local change.")
     return 0
 
 

@@ -5,15 +5,18 @@ The final demonstration must use real GitHub issues in our repository. LangGraph
 Completed tasks and affected files: [COMPLETED_WORK.md](COMPLETED_WORK.md).
 Project direction and migration notes: [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
-## TOOLS-02 - Database and tools: PARTIAL for the final backend
+## TOOLS-02 - Database and tools: PARTIAL for final verification
 
 - **DONE:** Built the SQLite schema, 50-fixture dataset, seed/reset commands and five tools.
 - **DONE:** Added validation, human approval, version checks, idempotent writes, transactions, errors, redacted logs and tests.
-- **OPEN:** Add a GitHub API backend or adapter so the same tool behavior reads and writes real repository issues.
-- **OPEN:** Populate the repository with the agreed issue dataset, automatically if safe and repeatable; otherwise prepare the manual issue text.
-- **OPEN:** Send an email to the repository owner after every approved GitHub modification.
+- **DONE:** Added GitHub API client/service and GitHub mode to the review CLI.
+- **DONE:** Populate the repository with the agreed issue dataset, automatically if safe and repeatable; otherwise prepare the manual issue text.
+- **DONE:** Added a repeatable, marker-based seeder that skips existing fixtures and creates missing labels/issues/comments when `--apply` is used.
+- **DONE:** Read real repository issues and completed an approved real label update with read-back verification.
+- **PARTIAL:** Owner notification code is connected; SMTP delivery was not independently checked in every recipient inbox.
+- **DONE:** Focused GitHub adapter tests pass for reads, approval, notifications and exact retries; the tools subset now passes 111 tests.
 
-The existing SQLite implementation may be preserved for repeatable local tests. The final live demonstration must use the GitHub backend.
+The existing SQLite implementation may be preserved for repeatable local tests. The final live demonstration must use the GitHub backend. Fixtures 1-50 currently map to GitHub issues 2-51; issue 1 was already present.
 
 ## AGENT-01 - AI controller: PARTIAL
 
@@ -48,9 +51,8 @@ The existing SQLite implementation may be preserved for repeatable local tests. 
 
 ## Still needed
 
-- The repository link and owner email address.
-- Whether the 50 fixtures must all be created as real issues.
-- Whether issue creation may be automated with the GitHub API or must be manual.
-- The exact email provider and credentials/configuration method.
+- Configure and verify SMTP delivery for the owner notification addresses.
+- Commit and push the tools branch changes.
+- Coordinate the GitHub service integration with AGENT-01.
 
 Do not modify another teammate's workstream without coordination. Update this file and [COMPLETED_WORK.md](COMPLETED_WORK.md) after each agreed change.
