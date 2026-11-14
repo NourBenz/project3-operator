@@ -1,72 +1,56 @@
 # Tasks
 
-**Current:** tools are done; 172 tests pass. Next: the AI controller.
+The final demonstration must use real GitHub issues in our repository. LangGraph and LangSmith are mandatory. SQLite may remain for isolated local tests, but it cannot be the final source of issue data.
+
 Completed tasks and affected files: [COMPLETED_WORK.md](COMPLETED_WORK.md).
-Manual commands: [README.md](../README.md).
+Project direction and migration notes: [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
+
+## TOOLS-02 - Database and tools: PARTIAL for the final backend
+
+- **DONE:** Built the SQLite schema, 50-fixture dataset, seed/reset commands and five tools.
+- **DONE:** Added validation, human approval, version checks, idempotent writes, transactions, errors, redacted logs and tests.
+- **OPEN:** Add a GitHub API backend or adapter so the same tool behavior reads and writes real repository issues.
+- **OPEN:** Populate the repository with the agreed issue dataset, automatically if safe and repeatable; otherwise prepare the manual issue text.
+- **OPEN:** Send an email to the repository owner after every approved GitHub modification.
+
+The existing SQLite implementation may be preserved for repeatable local tests. The final live demonstration must use the GitHub backend.
 
 ## AGENT-01 - AI controller: PARTIAL
 
-Connect OpenAI to the existing tools and complete the triage workflow.
+- **DONE:** OpenAI adapter, offline model, tool registry, bounded loop, approval interaction, read-back and CLI were added.
+- **OPEN:** Connect the controller to the real GitHub-backed tools through LangGraph.
+- **OPEN:** Represent investigation, proposal, human approval, write, email and verification as explicit LangGraph state transitions.
+- **OPEN:** Verify real GitHub failures, API timeouts, retries, stopping behavior and live approval.
 
-- **DONE - 01.1:** Shared Pydantic tool, result, proposal and approval contracts.
-- **DONE - 01.2:** Tested stopping, retry, repetition, timeout and cost controls.
-- **OPEN - 01.3:** Configurable OpenAI adapter and fake model for offline tests.
-- **OPEN - 01.4:** Triage instructions and classification rubric.
-- **OPEN - 01.5:** Connect the agent registry to the existing service dispatcher.
-- **OPEN - 01.6:** Implement the decide -> tool -> observe loop.
-- **OPEN - 01.7:** Pause/resume the agent for human approval using the existing approval manager.
-- **OPEN - 01.8:** Bounded recovery using the same operation ID for write retries.
-- **OPEN - 01.9:** Agent CLI, decision traces and actual token usage.
-- **OPEN - 01.10:** End-to-end agent tests.
+## EVAL-03 - Evaluation: PARTIAL
 
-**Finished when:** a real model reads an issue, proposes a change, waits for approval,
-writes, verifies and stops. Denial and failures must be handled safely.
+- **DONE:** 30 offline scenarios, five injection fixtures, an isolated runner, basic metrics and saved fake-model results exist.
+- **OPEN:** Correct the evaluator's expected-status and safety scoring.
+- **OPEN:** Decide which tests use SQLite and which tests use real GitHub issues.
+- **OPEN:** Evaluate real GitHub trajectories and record the required LangSmith traces.
 
-## TOOLS-02 - Database and tools: DONE
+## SEC-04 - Security, notifications and submission: PARTIAL
 
-- **DONE - 02.1:** SQLite schema, constraints, migration and atomic persistence.
-- **DONE - 02.2:** 50 issues, eight labels and four baseline comments.
-- **DONE - 02.3:** Initialize/reset and preserve existing edits.
-- **DONE - 02.4:** list_issues, read_issue and get_labels.
-- **DONE - 02.5:** Exact human approval, rejection, expiry and cancellation.
-- **DONE - 02.6:** Approved label updates with conflict/closed-issue/version checks.
-- **DONE - 02.7:** Approved comments with length and version checks.
-- **DONE - 02.8:** Persisted outcomes, safe retries and duplicate-operation protection.
-- **DONE - 02.9:** Normalized errors and redacted call/approval logs.
-- **DONE - 02.10:** Tool, approval, retry, rollback, concurrency and CLI tests.
+- **DONE:** Local tool-boundary protections, approval checks, secret redaction and related tests exist.
+- **OPEN:** Review GitHub token permissions, repository access, live-data isolation and issue-creation safety.
+- **OPEN:** Review the email content, recipient and failure behavior for post-change notifications.
+- **OPEN:** Configure LangSmith tracing and protect trace data and credentials.
+- **OPEN:** Complete threat model, error taxonomy, report, postmortem and demo documentation.
 
-The AI developer should use the existing service rather than rebuild these tools.
+## Decisions already clarified
 
-## EVAL-03 - Evaluation: OPEN
+- LangGraph is mandatory.
+- LangSmith is mandatory.
+- The final source of issues and final writes is the real GitHub repository.
+- SQLite is optional local test support, not the final data source.
+- The scope is issue reading, labels and comments; no draft pull request or PR.
+- After an approved GitHub change, email the repository owner with a short notification.
 
-Measure the steps taken and resulting database changes, not just the final answer.
+## Still needed
 
-- **OPEN - 03.1:** Define scenario format and expected outcomes.
-- **OPEN - 03.2:** Write 30+ scenarios covering normal flows and failures.
-- **OPEN - 03.3:** Include at least five distinct injection cases.
-- **OPEN - 03.4:** Build the isolated runner with simulated approvals and injected failures.
-- **OPEN - 03.5:** Score step/tool accuracy, wasted steps, success, recovery and safety.
-- **OPEN - 03.6:** Measure tokens/cost, p50/p95 time and projected cost at 100x.
-- **OPEN - 03.7:** Test the evaluator and scenario isolation.
-- **OPEN - 03.8:** Execute and save real traces/results.
+- The repository link and owner email address.
+- Whether the 50 fixtures must all be created as real issues.
+- Whether issue creation may be automated with the GitHub API or must be manual.
+- The exact email provider and credentials/configuration method.
 
-**Finished when:** 30+ reproducible scenarios run with documented metrics.
-Keep fake-model tests and live-model results separate.
-
-## SEC-04 - Security, report and demo: PARTIAL
-
-- **OPEN - 04.1:** Complete the threat model.
-- **OPEN - 04.2:** Implement AI injection tests with EVAL-03.
-- **OPEN - 04.3:** Complete error taxonomy: behavior and a test per class.
-- **OPEN - 04.4:** Review approval, sandbox isolation, logs and secret handling.
-- **PARTIAL - 04.5:** Setup/manual commands exist; add agent/evaluation commands, results and contributions.
-- **OPEN - 04.6:** Write the report and export report.pdf, maximum four pages.
-- **OPEN - 04.7:** Write the postmortem from real problems and lessons.
-- **OPEN - 04.8:** Verify a clean clone and rehearse the demo.
-
-Drafts are in docs/deliverables. Final submission needs root-level errors.md,
-threat_model.md, postmortem.md and report.pdf.
-Confirm instructor approval, team owners and the official deadline.
-
-After finishing a task, update its status here and its affected files in
-[COMPLETED_WORK.md](COMPLETED_WORK.md).
+Do not modify another teammate's workstream without coordination. Update this file and [COMPLETED_WORK.md](COMPLETED_WORK.md) after each agreed change.
