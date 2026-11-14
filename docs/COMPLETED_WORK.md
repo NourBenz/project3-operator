@@ -44,5 +44,5 @@ The local SQLite backend remains available for tests. The live GitHub tools have
 - **PARTIAL - Owner notifications:** Added email notifications to the configured recipients after approved GitHub changes; full SMTP delivery confirmation remains.
   Files: tools/notifications.py, .env.example.
 
-- **PARTIAL - GitHub adapter tests:** Added focused fake-client tests for reads, approval, notifications and exact retries; broader API failure tests and execution in the team runtime remain.
+- **DONE - GitHub adapter tests:** Fake-client tests cover reads, approval, notifications and exact retries; the complete tools subset passed 111 tests.
   Files: tests/test_github_service.py.
