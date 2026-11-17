@@ -13,7 +13,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from agent.approval import ApprovalError, ApprovalManager
-from agent.logging_utils import CallContext, ToolLogger, logged_call
+from agent.logging_utils import ToolLogger, logged_call
 from agent.schemas import PostCommentArgs, UpdateLabelsArgs, WriteProposal
 from sandbox.taxonomy import LABEL_DETAILS
 from tools.common import failure

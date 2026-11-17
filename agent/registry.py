@@ -14,9 +14,6 @@ class ToolRegistry:
         "post_comment": PostCommentArgs,
     }
 
-    def names(self):
-        return tuple(self._models)
-
     def validate(self, name, arguments):
         model = self._models.get(name)
         if model is None:

@@ -4,7 +4,9 @@ from __future__ import annotations
 import time
 import uuid
 from dataclasses import dataclass, field
+from typing import Any
 
+from agent.backend import IssueService
 from agent.llm import ModelError
 from agent.approval import ApprovalError
 from agent.logging_utils import CallContext
@@ -31,12 +33,25 @@ class AgentResult:
 
 
 class TriageAgent:
-    def __init__(self, model, *, service=None, registry=None, limits=None, clock=time.monotonic):
+    def __init__(
+        self,
+        model: Any,
+        *,
+        service: IssueService | None = None,
+        registry: ToolRegistry | None = None,
+        limits=None,
+        clock=time.monotonic,
+    ):
         self.model = model
-        self.service = service or MockGitHub()
+        self.service: IssueService = service or MockGitHub()
         self.registry = registry or ToolRegistry()
         self.limits = limits
         self.clock = clock
+
+    def solve(self, issue_number, **kwargs):
+        """Run the additive Level 2 workflow with the same injected backend/model."""
+        from agent.solve import Level2Solver
+        return Level2Solver(self.model, self.service, **kwargs).run(issue_number)
 
     def run(self, user_request, *, task_id=None, approval_handler=None, proposal_presenter=None):
         task_id = task_id or "task-" + uuid.uuid4().hex

@@ -1,0 +1,5 @@
+# The test image contains dependencies only. Never send the checkout, .env,
+# Git history, credentials, or user artifacts to the Docker build daemon.
+**
+!docker/
+!docker/solve-tests.Dockerfile

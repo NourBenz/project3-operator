@@ -1,19 +1,66 @@
-"""Command-line entry point for local issue triage."""
+"""Command-line entry point for local or GitHub issue triage."""
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+from agent.backend import IssueService
 from agent.llm import build_model
-from agent.logging_utils import redact
+from agent.logging_utils import CallContext, redact
 from agent.loop import TriageAgent
+from agent.publication import PublicationError, PublicationService
 from sandbox.database import DEFAULT_DB
 from sandbox.mock_github import MockGitHub
+from tools.github_service import GitHubAPIError, GitHubService
 
 
 USE_COLOR = sys.stdout.isatty()
+
+
+class BackendConfigurationError(ValueError):
+    """Raised when an explicitly selected backend cannot be configured safely."""
+
+
+def build_backend(
+    backend: str,
+    *,
+    db: Path = DEFAULT_DB,
+    repository: str | None = None,
+    github_service_factory=None,
+) -> IssueService:
+    """Build exactly one explicitly selected backend.
+
+    The optional factory is an injection seam for tests; production callers use
+    GitHubService, which obtains GITHUB_TOKEN through its existing configuration.
+    """
+    if backend == "local":
+        return MockGitHub(db)
+    if backend != "github":
+        raise BackendConfigurationError("backend must be 'local' or 'github'")
+
+    load_dotenv()
+    target = (repository or os.environ.get("GITHUB_REPOSITORY") or "").strip()
+    if not target:
+        raise BackendConfigurationError(
+            "GitHub mode requires --repository or GITHUB_REPOSITORY"
+        )
+    factory = github_service_factory or GitHubService
+    return factory(target)
+
+
+def check_github_connectivity(service: IssueService, issue_id: int):
+    """Read one issue to verify repository authentication and access, without writes."""
+    return service.call(
+        "read_issue",
+        {"issue_id": issue_id},
+        task_id="connectivity-check",
+        context=CallContext(task_id="connectivity-check", step=1),
+    )
 
 
 def color(text, code):
@@ -105,6 +152,24 @@ def print_result(result):
     status_color = "32" if status == "DONE" else "31"
 
     print()
+
+
+def print_solve_review(result, proposal=None):
+    heading("LEVEL 2 SOLUTION REVIEW")
+    show_value("Repository", result.workspace.identity.repository)
+    show_value("Issue URL", result.issue.get("source_url"))
+    show_value("Base branch", result.workspace.identity.default_branch)
+    show_value("Base commit", result.workspace.identity.base_sha)
+    show_value("Root cause", result.root_cause)
+    show_value("Fix plan", result.fix_plan)
+    show_value("Changed files", result.changed_files)
+    heading("COMPLETE DIFF")
+    print(result.diff)
+    heading("ISOLATED TEST EVIDENCE")
+    show_value("Tests", result.tests)
+    if proposal is not None:
+        heading("EXACT PUBLICATION ACTION")
+        show_value("Publication", proposal.request.model_dump(mode="json"))
     print(color("=" * 58, "36"))
     print(color("              ISSUE TRIAGE AGENT", "1;36"))
     print(color("=" * 58, "36"))
@@ -159,26 +224,122 @@ def print_result(result):
     print()
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="Safely triage one issue in the local MockGitHub sandbox."
+        description="Safely triage one issue using the local sandbox or GitHub."
     )
-    parser.add_argument("--issue", required=True, type=int, help="Local sandbox issue number")
+    parser.add_argument("--issue", required=True, type=int, help="Issue number")
+    parser.add_argument(
+        "--backend", choices=("local", "github"), default="local",
+        help="Issue backend; local is the safe default",
+    )
+    parser.add_argument(
+        "--repository",
+        help="GitHub repository URL; defaults to GITHUB_REPOSITORY in github mode",
+    )
+    parser.add_argument(
+        "--check-connectivity", action="store_true",
+        help="Read the selected GitHub issue and exit without running the agent",
+    )
+    parser.add_argument(
+        "--solve", action="store_true",
+        help="Run the Level 2 investigate/patch/test/draft-PR workflow (GitHub only)",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="With --solve, stop after local patch and isolated test evidence",
+    )
     parser.add_argument("--offline", action="store_true", help="Use the deterministic no-credit demo model")
     parser.add_argument("--model", help="Optional OpenAI model name")
     parser.add_argument("--db", type=Path, default=DEFAULT_DB, help="Sandbox database path")
     parser.add_argument("--yes", action="store_true", help="Explicitly approve proposed local writes (demo/automation only)")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+
+    if args.check_connectivity and args.backend != "github":
+        parser.error("--check-connectivity requires --backend github")
+    if args.solve and args.backend != "github":
+        parser.error("--solve requires --backend github")
+    if args.dry_run and not args.solve:
+        parser.error("--dry-run requires --solve")
+    if args.solve and args.offline:
+        parser.error("--solve requires OpenAIModel; FakeModel is not code-solving evidence")
+    if args.backend == "github" and args.yes:
+        parser.error("--yes is disabled for GitHub; review the exact proposal interactively")
+
+    try:
+        service = build_backend(
+            args.backend, db=args.db, repository=args.repository,
+        )
+    except (BackendConfigurationError, GitHubAPIError, ValueError) as error:
+        parser.error(str(error))
+
+    if args.check_connectivity:
+        result = check_github_connectivity(service, args.issue)
+        heading("GITHUB CONNECTIVITY")
+        if not result["ok"]:
+            error = result.get("error") or {}
+            show_value("Status", "FAILED")
+            show_value("Error code", error.get("code", "UNKNOWN"))
+            show_value("Message", error.get("message", "Connectivity check failed"))
+            return 1
+        issue = result["data"]
+        show_value("Status", "OK - authenticated read succeeded")
+        show_value("Repository", service.scope)
+        show_value("Issue", f"#{issue['id']}")
+        show_value("Issue state", issue.get("state"))
+        show_value("Remote write", "Not attempted")
+        return 0
 
     model = build_model(offline=args.offline, model=args.model)
-    service = MockGitHub(args.db)
+
+    if args.solve:
+        agent = TriageAgent(model, service=service)
+        solved = agent.solve(args.issue)
+        if solved.status != "READY_FOR_APPROVAL":
+            heading("LEVEL 2 RESULT")
+            show_value("Status", solved.status)
+            show_value("Message", solved.summary)
+            if solved.workspace:
+                solved.workspace.cleanup()
+            return 1
+        if args.dry_run:
+            print_solve_review(solved)
+            show_value("Remote write", "Not attempted (--dry-run)")
+            solved.workspace.cleanup()
+            return 0
+        publisher = PublicationService(service)
+        proposal = publisher.prepare(
+            task_id=solved.task_id, issue=solved.issue, workspace=solved.workspace,
+            root_cause=solved.root_cause, test_evidence=solved.tests,
+            limitations=solved.limitations,
+        )
+        print_solve_review(solved, proposal)
+        outcome = publisher.approvals.prompt(proposal.proposal_id)
+        if outcome.decision.decision != "approve":
+            show_value("Publication", "Cancelled; no remote Git or GitHub mutation attempted")
+            solved.workspace.cleanup()
+            return 1
+        try:
+            published = publisher.publish(proposal, outcome.grant, solved.workspace, solved.tests)
+            heading("VERIFIED DRAFT PULL REQUEST")
+            show_value("Result", published)
+            return 0
+        except PublicationError as error:
+            heading("PUBLICATION FAILED")
+            show_value("Error code", error.code)
+            show_value("Message", str(error))
+            if error.branch:
+                show_value("Pushed branch", error.branch)
+            return 1
+        finally:
+            solved.workspace.cleanup()
 
     def present_proposal(proposal, issue, explanation):
         print_proposal(proposal, issue, explanation)
 
     handler = (
         (lambda proposal: "yes")
-        if args.yes
+        if args.yes and args.backend == "local"
         else (lambda proposal: service.approvals.prompt(proposal.proposal_id))
     )
 

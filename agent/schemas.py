@@ -160,6 +160,35 @@ class ApprovalDecision(Contract):
     decision: Literal["approve", "reject", "cancel"]
 
 
+class PublicationRequest(Contract):
+    """Everything a human approves before Git/GitHub publication."""
+    repository: Annotated[str, Field(min_length=1, max_length=500)]
+    issue_number: PositiveId
+    issue_url: Annotated[str, Field(min_length=1, max_length=1000)]
+    base_branch: Annotated[str, Field(min_length=1, max_length=200)]
+    base_sha: Annotated[str, Field(pattern=r"^[a-f0-9]{40}$")]
+    patch_hash: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    test_evidence_hash: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    changed_files: Annotated[tuple[str, ...], Field(min_length=1, max_length=20)]
+    branch: Annotated[str, Field(pattern=r"^cs496/issue-[1-9][0-9]*-[a-f0-9]{8}$")]
+    commit_message: Annotated[str, Field(min_length=1, max_length=200)]
+    pr_title: Annotated[str, Field(min_length=1, max_length=240)]
+    pr_body: Annotated[str, Field(min_length=1, max_length=20_000)]
+
+
+class PublicationProposal(Contract):
+    proposal_id: Identifier
+    task_id: Identifier
+    request: PublicationRequest
+
+    def fingerprint(self):
+        payload = json.dumps(
+            self.model_dump(mode="json"), sort_keys=True,
+            separators=(",", ":"), ensure_ascii=False, allow_nan=False,
+        )
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
 class RunState(Contract):
     task_id: Identifier
     status: RunStatus = "RUNNING"

@@ -35,22 +35,3 @@ one-sentence explanation in your assistant content alongside the single tool cal
 it will be shown to the human reviewer but cannot authorize the action. Return a
 concise final summary only when the task is complete, rejected, unsafe, or cannot
 proceed."""
-
-TRIAGE_RUBRIC = {
-    "bug": "A demonstrated failure, crash, regression, or incorrect existing behavior.",
-    "feature": "A request for new functionality or deliberate behavior extension.",
-    "documentation": "A documentation, guide, wording, or example problem.",
-    "question": "A request for explanation or usage help rather than a demonstrated defect.",
-    "critical": "Credible security, data-loss, or widespread outage evidence.",
-    "high": "A reproducible major functionality failure or significant impact.",
-    "medium": "Ordinary work or a defect with a reasonable workaround.",
-    "low": "Cosmetic or minor impact.",
-}
-
-
-def trusted_messages(user_request):
-    """Return the policy and user request as separate trusted message objects."""
-    return [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": str(user_request)},
-    ]
