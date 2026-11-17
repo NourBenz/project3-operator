@@ -14,6 +14,24 @@ To use the configured GitHub repository:
 .venv/bin/python -m web --backend github
 ```
 
-The dashboard uses the existing server-side `GITHUB_TOKEN`, `GITHUB_REPOSITORY`, and OpenAI settings. You can select a repository at startup with `--repository OWNER/REPO`. In GitHub mode, one run triages the issue, then investigates and tests a fix after triage succeeds. The agent uses OpenAI and the existing Docker test runner. Review the exact proposal before each GitHub write, including draft PR publication. To run triage alone with the deterministic model, add `--offline`.
+The dashboard uses the existing server-side `GITHUB_TOKEN`, `GITHUB_REPOSITORY`, and OpenAI settings. You can select a repository at startup with `--repository OWNER/REPO`. In GitHub mode, the agent uses OpenAI to triage the issue. Review the exact proposal before approving any label or comment update. To run triage alone with the deterministic model, add `--offline`.
 
 The dashboard listens on loopback for local use. Run one workflow at a time. Stop the server with Ctrl+C.
+
+## LangGraph and LangSmith
+
+LangGraph runs the same triage workflow for the dashboard and CLI. The approval handlers decide
+whether a proposed label or comment update is authorized.
+
+To opt in to workflow traces, add these settings to your local `.env` and
+restart the dashboard or rerun the CLI:
+
+```dotenv
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=your_key_here
+LANGSMITH_PROJECT=project3-operator
+```
+
+LangSmith receives workflow steps, timings, and status codes. Issue content,
+model prompts and approval grants stay outside the traced graph
+state. Tracing is off by default.

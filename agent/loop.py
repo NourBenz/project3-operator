@@ -48,11 +48,6 @@ class TriageAgent:
         self.limits = limits
         self.clock = clock
 
-    def solve(self, issue_number, **kwargs):
-        """Run the additive Level 2 workflow with the same injected backend/model."""
-        from agent.solve import Level2Solver
-        return Level2Solver(self.model, self.service, **kwargs).run(issue_number)
-
     def run(self, user_request, *, task_id=None, approval_handler=None, proposal_presenter=None):
         task_id = task_id or "task-" + uuid.uuid4().hex
         controller = StopController(self.limits, clock=self.clock)

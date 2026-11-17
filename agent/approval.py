@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
-from agent.schemas import ApprovalDecision, PublicationProposal, WriteProposal
+from agent.schemas import ApprovalDecision, WriteProposal
 
 
 class ApprovalError(Exception):
@@ -29,7 +29,7 @@ class ApprovalOutcome:
 
 @dataclass
 class _Record:
-    proposal: WriteProposal | PublicationProposal
+    proposal: WriteProposal
     scope: str
     expires_at: float
     status: str = "pending"
@@ -53,7 +53,7 @@ class ApprovalManager:
             yield
 
     def register(self, proposal, scope, *, audit=None):
-        if not isinstance(proposal, (WriteProposal, PublicationProposal)):
+        if not isinstance(proposal, WriteProposal):
             raise TypeError("Expected a validated proposal")
         with self._lock:
             if proposal.task_id in self._cancelled_tasks:

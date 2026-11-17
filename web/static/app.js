@@ -110,15 +110,6 @@ function controls() {
   $('start').disabled = !state.detail || state.detail.state === 'closed' || !terminal(state.run) || state.launching;
 }
 
-function renderEvidence(container, evidence) {
-  if (evidence.root_cause) container.append(node('h3', 'Root cause'), node('p', evidence.root_cause));
-  if (evidence.fix_plan) container.append(node('h3', 'Fix plan'), node('p', evidence.fix_plan));
-  if (evidence.tests?.length) {
-    container.append(node('p', 'Test evidence'), node('pre', JSON.stringify(evidence.tests, null, 2)));
-  }
-  if (evidence.diff) container.append(node('p', 'Proposed diff'), node('pre', evidence.diff));
-}
-
 function decisionButton(run, text, answer) {
   const button = node('button', text, answer === 'yes' ? 'primary' : '');
   button.type = 'button';
@@ -148,7 +139,6 @@ function renderRun(run) {
   if (!run) return;
   const activity = $('activity');
   activity.replaceChildren(node('p', `Issue #${run.issue} · ${run.phase}`, 'meta'));
-  if (run.triage_summary) activity.append(node('p', run.triage_summary));
   for (const entry of run.activity) {
     const event = node('div', undefined, 'event' + (entry.ok === false ? ' failed' : ''));
     event.append(node('span', entry.ok === false ? '×' : '✓'),
@@ -159,19 +149,14 @@ function renderRun(run) {
   if (!run.activity.length && !run.summary) activity.append(node('p', 'Agent is working…', 'muted'));
   const review = $('review');
   review.replaceChildren();
-  review.hidden = !run.review && !run.evidence;
+  review.hidden = !run.review;
   if (run.review) {
-    review.append(node('h3', run.review.diff ? 'Review proposed code fix' : 'Review proposed issue update'),
+    review.append(node('h3', 'Review proposed issue update'),
       node('p', run.review.explanation || 'Inspect the exact request before approving.'),
       node('pre', JSON.stringify(run.review.request, null, 2)));
-    renderEvidence(review, run.review);
     const actions = node('div', undefined, 'actions');
     actions.append(decisionButton(run, 'Approve change', 'yes'), decisionButton(run, 'Reject', 'no'));
     review.append(actions);
-  } else if (run.evidence) {
-    review.append(node('h3', run.status === 'FAILED' ? 'Unverified fix attempt' : 'Code fix and test evidence'));
-    renderEvidence(review, run.evidence);
-    if (run.publication) review.append(node('pre', JSON.stringify(run.publication, null, 2)));
   }
 }
 
@@ -197,9 +182,7 @@ async function start() {
   const local = state.config.backend === 'local';
   $('connection').textContent = local ? 'Local sandbox' : 'GitHub mode';
   $('repo').textContent = local ? '⌘  Sample repository' : '⌘  ' + state.config.scope;
-  $('workflow').textContent = state.config.offline
-    ? 'Offline mode runs triage only. Start in GitHub mode with OpenAI credentials to generate a code fix.'
-    : 'Triage, investigate, and test a fix in one run. Review each proposed write.';
+  $('workflow').textContent = 'Review proposed labels or comments before they are applied.';
   bind('search', 'input', renderList);
   bind('filter', 'change', () => loadIssues());
   bind('refresh', 'click', async () => {

@@ -9,10 +9,12 @@ from tempfile import TemporaryDirectory
 from threading import Condition, Lock, Thread
 from urllib.parse import parse_qs, urlsplit
 
+from dotenv import load_dotenv
+
 from agent.llm import ModelError, build_model
 from agent.loop import TriageAgent
 from agent.main import build_backend
-from agent.publication import PublicationService
+from agent.workflow import run_triage
 from sandbox.seed import seed_database
 
 STATIC = Path(__file__).with_name("static")
@@ -22,7 +24,6 @@ class Run:
     def __init__(self, issue):
         self.id = secrets.token_urlsafe(18)
         self.issue = issue
-        self.completed_activity = []
         self.condition = Condition()
         self.state = {"status": "RUNNING", "phase": "Triage", "activity": [], "review": None, "summary": ""}
 
@@ -38,7 +39,7 @@ class Run:
             if tool:
                 outcome = result.get("result", result)
                 activity.append({"tool": tool, "ok": outcome.get("ok")})
-        self.update(activity=self.completed_activity + activity)
+        self.update(activity=activity)
 
     def review(self, manager, proposal, **evidence):
         with self.condition:
@@ -71,15 +72,10 @@ class TracedModel:
         self.run.trace(transcript)
         return self.model.decide(request, transcript, tools)
 
-    def decide_with_prompt(self, prompt, request, transcript, tools):
-        self.run.trace(transcript)
-        return self.model.decide_with_prompt(prompt, request, transcript, tools)
-
 
 def execute(server, run):
-    workspace = None
+    service = server.service
     try:
-        service = server.service
         model = TracedModel(build_model(offline=server.offline), run)
         agent = TriageAgent(model, service=service)
         explanations = {}
@@ -91,66 +87,20 @@ def execute(server, run):
             return run.review(service.approvals, proposal,
                               explanation=explanations.pop(proposal.proposal_id, None))
 
-        result = agent.run(
+        result = run_triage(
+            agent,
             f"Triage issue {run.issue}", task_id=run.id,
             approval_handler=review, proposal_presenter=present,
         )
         run.trace(result.transcript)
-        if result.status != "DONE":
-            summary = result.summary
-            if not server.offline:
-                summary += " Fix investigation did not start because triage did not complete."
-            run.update(status=result.status, summary=summary)
-            return
-        if server.offline:
-            run.update(status=result.status, summary=result.summary)
-            return
-
-        run.completed_activity = run.state["activity"]
-        run.update(phase="Investigating fix", triage_summary=result.summary)
-        result = agent.solve(run.issue)
-        workspace = result.workspace
-        run.trace(result.transcript)
-        patch_attempts = [event["result"] for event in result.transcript
-                          if event["result"].get("tool") == "propose_patch"]
-        evidence = {
-            "diff": result.diff,
-            "tests": result.tests or (patch_attempts[-1].get("tests", []) if patch_attempts else []),
-            "root_cause": result.root_cause,
-            "fix_plan": result.fix_plan,
-        }
-        if any(evidence.values()):
-            run.update(evidence=evidence)
-        if result.status != "READY_FOR_APPROVAL":
-            summary = result.summary
-            if not evidence["diff"]:
-                summary += " No code fix was generated."
-            run.update(status=result.status, summary=summary)
-            return
-        publisher = PublicationService(service)
-        proposal = publisher.prepare(
-            task_id=result.task_id, issue=result.issue, workspace=workspace,
-            root_cause=result.root_cause, test_evidence=result.tests, limitations=result.limitations,
-        )
-        run.update(phase="Draft pull request")
-        outcome = run.review(publisher.approvals, proposal, **evidence)
-        if outcome.decision.decision != "approve":
-            run.update(status="CANCELLED", summary="Publication cancelled.", evidence=evidence)
-            return
-        published = publisher.publish(proposal, outcome.grant, workspace, result.tests)
-        run.update(status="DONE", summary="Draft pull request verified.", evidence=evidence,
-                   publication=published)
+        run.update(status=result.status, summary=result.summary)
     except ModelError as error:
         run.update(status="FAILED", summary=str(error))
     except Exception as error:
-        logging.warning("Dashboard run failed (%s)", type(error).__name__)
-        run.update(status="FAILED", summary="The run failed. Check the agent configuration and local logs.")
+        logging.warning("Dashboard workflow failed (%s)", type(error).__name__)
+        run.update(status="FAILED", summary="Could not run the dashboard workflow. Check the local logs.")
     finally:
-        try:
-            if workspace:
-                workspace.cleanup()
-        finally:
-            run.update(review=None, finished=True)
+        run.update(review=None, finished=True)
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
@@ -235,6 +185,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
 
 def main():
+    load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=("local", "github"), default="local")
     parser.add_argument("--repository")
