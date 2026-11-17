@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Operator · Issue console</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <div class="identity"><span class="mark" aria-hidden="true">✦</span> The Operator <span class="separator">/</span> <span class="console">Issue console</span></div>
+  <span id="connection" class="connection">Connecting</span>
+</header>
+<main>
+  <section class="hero" aria-labelledby="title">
+    <div class="hero-art" aria-hidden="true"><span>✦</span></div>
+    <div class="eyebrow"><span>✦</span> REPOSITORY WORKSPACE</div>
+    <h1 id="title">Issue command center</h1>
+    <p>Investigate issues, follow the agent’s work, and review changes before they go live.</p>
+    <div class="repo" id="repo">Loading repository…</div>
+  </section>
+  <p id="error" class="error" role="alert" hidden></p>
+  <div class="grid">
+    <section class="panel inbox" aria-labelledby="inbox-title">
+      <div class="panel-head"><h2 id="inbox-title">Issue inbox <span id="count" class="count"></span></h2><button id="refresh" class="subtle" aria-label="Refresh issues" title="Refresh issues">↻</button></div>
+      <div class="filters">
+        <input id="search" type="search" placeholder="Filter by title or #…" aria-label="Filter issues">
+        <select id="filter" aria-label="Issue state"><option value="open">Open</option><option value="closed">Closed</option><option value="all">All</option></select>
+      </div>
+      <div id="issues" class="issues" aria-label="Issues"></div>
+    </section>
+    <section class="panel detail" aria-labelledby="issue-title">
+      <div id="issue"><div class="empty">Select an issue to inspect its details.</div></div>
+    </section>
+    <section class="panel agent" aria-labelledby="agent-title">
+      <div class="panel-head"><h2 id="agent-title"><span class="spark">✦</span> Agent activity</h2><span id="status" class="pill">Idle</span></div>
+      <form id="launch" class="launch">
+        <p id="workflow" class="muted"></p>
+        <button id="start" class="primary" disabled>✦ Run agent</button>
+      </form>
+      <div id="activity" class="activity" aria-live="polite"><p class="muted">Tool activity will appear here when you start a run.</p></div>
+      <div id="review" class="review" hidden></div>
+    </section>
+  </div>
+</main>
+</body>
+</html>
