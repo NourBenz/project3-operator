@@ -6,7 +6,7 @@ from langchain_core.tracers.langchain import wait_for_all_tracers
 from langsmith import Client
 from langsmith.schemas import LangSmithInfo
 
-from agent.llm import FakeModel
+from agent.llm import FakeModel, ModelError
 from agent.loop import TriageAgent
 from agent.logging_utils import ToolLogger
 from test_github_service import FakeClient, FakeNotifier
@@ -126,3 +126,32 @@ def test_github_http_failure_mapping():
         client.request("GET", "/issues/4")
     assert error.value.code == "GITHUB_AUTHORIZATION"
     assert not error.value.retryable
+
+def test_model_failure_marks_langsmith_root_as_error(service, monkeypatch):
+    roots = set()
+    completed = {}
+
+    def capture(_client, name, inputs, **kwargs):
+        if name == "Operator triage":
+            roots.add(kwargs["id"])
+
+    def update(_client, run_id, **kwargs):
+        completed[run_id] = kwargs
+
+    monkeypatch.setenv("LANGSMITH_TRACING", "true")
+    monkeypatch.setenv("LANGSMITH_API_KEY", "test-key")
+    monkeypatch.setattr(Client, "info", property(lambda _client: LangSmithInfo()))
+    monkeypatch.setattr(Client, "create_run", capture)
+    monkeypatch.setattr(Client, "update_run", update)
+
+    class FailingModel:
+        def decide(self, *args):
+            raise ModelError("Private provider detail")
+
+    result = TriageAgent(FailingModel(), service=service).run("Analyze issue 12")
+    wait_for_all_tracers()
+    assert result.status == "FAILED"
+    assert result.summary == "Private provider detail"
+    root, = roots
+    assert "Operator triage ended with FAILED" in completed[root]["error"]
+    assert "Private provider detail" not in completed[root]["error"]

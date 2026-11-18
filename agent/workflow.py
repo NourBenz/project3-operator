@@ -28,6 +28,10 @@ TRANSITIONS = {
 }
 
 
+class TraceOutcomeError(RuntimeError):
+    """A sanitized agent failure reported to the graph tracer."""
+
+
 def run_triage(agent, request, **options):
     steps = agent.workflow_steps(request, **options)
     result = None
@@ -39,10 +43,12 @@ def run_triage(agent, request, **options):
             return {"next_stage": next(steps)}
         except StopIteration as completed:
             result = completed.value
+            if result.status in {"FAILED", "TIMEOUT", "MAX_STEPS"}:
+                raise TraceOutcomeError(f"Operator triage ended with {result.status}") from None
             return {"next_stage": END, "status": result.status}
         except Exception as error:
             failure = error
-            return {"next_stage": END, "status": "FAILED"}
+            raise TraceOutcomeError("Operator triage failed unexpectedly") from None
 
     graph = StateGraph(WorkflowState)
     for stage, destinations in TRANSITIONS.items():
@@ -56,6 +62,9 @@ def run_triage(agent, request, **options):
     try:
         with tracing_context(enabled=tracing_enabled):
             graph.compile().invoke({}, config=config)
+    except TraceOutcomeError:
+        # The graph records the error, while callers retain their existing result contract.
+        pass
     finally:
         steps.close()
     if failure is not None:
