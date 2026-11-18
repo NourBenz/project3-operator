@@ -12,6 +12,7 @@ from agent.approval import ApprovalError
 from agent.logging_utils import CallContext
 from agent.registry import ToolRegistry
 from agent.stopping import StopController, StopExecution
+from agent.workflow import run_triage
 from agent.task import understand_task
 from sandbox.mock_github import MockGitHub
 from tools.common import failure
@@ -49,6 +50,10 @@ class TriageAgent:
         self.clock = clock
 
     def run(self, user_request, *, task_id=None, approval_handler=None, proposal_presenter=None):
+        return run_triage(self, user_request, task_id=task_id, approval_handler=approval_handler,
+                          proposal_presenter=proposal_presenter)
+
+    def workflow_steps(self, user_request, *, task_id=None, approval_handler=None, proposal_presenter=None):
         task_id = task_id or "task-" + uuid.uuid4().hex
         controller = StopController(self.limits, clock=self.clock)
         transcript = []
@@ -59,6 +64,7 @@ class TriageAgent:
             return AgentResult(task_id, "FAILED", scope.clarification, plan, transcript, usage=usage)
         try:
             while True:
+                yield "decision"
                 step = controller.begin_decision()
                 decision = self.model.decide(user_request, transcript, self.registry.openai_tools())
                 usage["input_tokens"] += decision.input_tokens or 0
@@ -87,36 +93,47 @@ class TriageAgent:
                         transcript.append({"kind": "tool_result", "result": result})
                         continue
                     controller.before_tool_call(call.name, args)
-                    result, pending = self._call(
+                    result, pending = yield from self._call(
                         call.name, args, task_id, step, approval_handler,
                         issue_context=self._latest_issue(transcript),
                         explanation=decision.explanation,
                         proposal_presenter=proposal_presenter,
+                        checkpoint=controller.checkpoint,
                     )
-                    transcript.append({"kind": "tool_result", "result": {"tool": call.name, "result": result}})
-
-                    # Rejection and cancellation are terminal human decisions.
-                    error_code = (result.get("error") or {}).get("code")
-                    if error_code == "APPROVAL_DENIED":
-                        return AgentResult(
-                            task_id, "REJECTED",
-                            "Human rejected the proposed action. No write was executed.",
-                            plan, transcript, usage=usage,
+                    self._record(transcript, call.name, result)
+                    if (result.get("error") or {}).get("retryable"):
+                        yield "retry"
+                        step = controller.begin_decision()
+                        controller.before_tool_call(call.name, args, retry=True)
+                        result, pending = yield from self._call(
+                            call.name, args, task_id, step, approval_handler,
+                            issue_context=self._latest_issue(transcript),
+                            explanation=decision.explanation,
+                            proposal_presenter=proposal_presenter,
+                            checkpoint=controller.checkpoint,
                         )
-                    if error_code == "USER_CANCELLED":
-                        return AgentResult(
-                            task_id, "CANCELLED",
-                            "Human cancelled the task. No write was executed.",
-                            plan, transcript, usage=usage,
-                        )
+                        self._record(transcript, call.name, result)
 
+                    error = result.get("error") or {}
+                    if error.get("code") == "APPROVAL_DENIED":
+                        return AgentResult(task_id, "REJECTED", "Human rejected the proposed action.",
+                                           plan, transcript, usage=usage)
+                    if error.get("code") == "USER_CANCELLED":
+                        return AgentResult(task_id, "CANCELLED", "Human cancelled the task.",
+                                           plan, transcript, usage=usage)
                     if pending is not None:
                         return AgentResult(task_id, "AWAITING_APPROVAL", "A human decision is required before the proposed write.", plan, transcript, pending, usage)
-                    if result["error"] and result["error"].get("retryable"):
-                        result = self._retry(call.name, args, task_id, controller, transcript, approval_handler,
-                                             proposal_presenter)
-                    if call.name in WRITE_TOOLS and result["ok"]:
+                    if call.name in WRITE_TOOLS:
+                        if error.get("code") == "APPROVAL_EXPIRED":
+                            continue
+                        if not result["ok"]:
+                            return AgentResult(task_id, "FAILED", error["message"], plan, transcript, usage=usage)
+                        yield "verification"
                         self._verify_successful_write(args, task_id, controller, transcript)
+                        if result.get("notification_failed"):
+                            return AgentResult(task_id, "FAILED",
+                                               "GitHub accepted the write, but owner email delivery failed. Check the read-back and SMTP settings.",
+                                               plan, transcript, usage=usage)
                     continue
                 if decision.final:
                     if not self._final_is_supported(transcript, scope):
@@ -133,13 +150,16 @@ class TriageAgent:
             return AgentResult(task_id, "FAILED", str(error), plan, transcript, usage=usage)
 
     def _call(self, name, args, task_id, step, approval_handler, *, issue_context=None,
-              explanation=None, proposal_presenter=None):
+              explanation=None, proposal_presenter=None, checkpoint):
         context = CallContext(task_id=task_id, step=step)
         if name not in WRITE_TOOLS:
+            yield "investigation"
             return self.service.call(name, args, task_id=task_id, context=context), None
+        yield "proposal"
         proposal = self.service.propose(name, args, task_id=task_id)
         if proposal_presenter is not None:
             proposal_presenter(proposal, issue_context, explanation)
+        yield "approval"
         if approval_handler is None:
             return failure("APPROVAL_REQUIRED", "Human approval is required"), proposal
         try:
@@ -155,8 +175,22 @@ class TriageAgent:
         if outcome.grant is None:
             return failure("APPROVAL_DENIED" if outcome.decision.decision == "reject" else "USER_CANCELLED",
                            "Human did not approve the proposed write"), None
-        return self.service.call(name, args, task_id=task_id, proposal_id=proposal.proposal_id,
-                                 grant=outcome.grant, context=context), None
+        yield "write"
+        checkpoint()
+        write = getattr(self.service, "call_with_deferred_notification", None)
+        options = dict(task_id=task_id, proposal_id=proposal.proposal_id, grant=outcome.grant, context=context)
+        if write is None:
+            return self.service.call(name, args, **options), None
+        result, notify = write(name, args, **options)
+        if notify is not None:
+            yield "email"
+            if not notify():
+                result = {**result, "notification_failed": True}
+        return result, None
+
+    @staticmethod
+    def _record(transcript, tool, result):
+        transcript.append({"kind": "tool_result", "result": {"tool": tool, "result": result}})
 
     def _verify_successful_write(self, write_args, task_id, controller, transcript):
         """Controller-owned read-back; one independently budgeted tool call."""
@@ -192,9 +226,15 @@ class TriageAgent:
             data = write["result"]["data"]
             if "labels" in data and not set(data["labels"]).issubset(set(latest.get("labels", []))):
                 return False
-            if "comment" in data and not any(comment.get("operation_id") == data["comment"]["operation_id"]
-                                                for comment in latest.get("comments", [])):
-                return False
+            if "comment" in data:
+                expected = data["comment"]
+                if not any(
+                    comment.get("operation_id") == expected["operation_id"]
+                    or (latest.get("source_kind") == "github" and expected.get("id") is not None
+                        and comment.get("id") == expected["id"])
+                    for comment in latest.get("comments", [])
+                ):
+                    return False
         return True
 
     @classmethod
@@ -255,13 +295,3 @@ class TriageAgent:
         if name in WRITE_TOOLS:
             return scope.permits_writes and arguments.get("issue_id") == scope.issue_id
         return name == "get_labels"
-
-    def _retry(self, name, args, task_id, controller, transcript, approval_handler, proposal_presenter):
-        # A retry consumes a new decision and the service's idempotency ledger protects writes.
-        step = controller.begin_decision()
-        controller.before_tool_call(name, args, retry=True)
-        result, pending = self._call(name, args, task_id, step, approval_handler,
-                                     issue_context=self._latest_issue(transcript),
-                                     proposal_presenter=proposal_presenter)
-        transcript.append({"kind": "tool_result", "result": {"tool": name, "result": result}})
-        return result

@@ -35,3 +35,19 @@ LANGSMITH_PROJECT=project3-operator
 LangSmith receives workflow steps, timings, and status codes. Issue content,
 model prompts and approval grants stay outside the traced graph
 state. Tracing is off by default.
+
+The workflow has explicit decision, investigation, proposal, approval, write,
+email, and verification nodes. Retryable reads can return through the retry
+node. The graph reaches the write node only after exact approval; live GitHub
+changes then go through owner notification and read-back. Configure SMTP with
+the variables listed in `.env.example`.
+
+To run the opt-in GitHub checks from the repository root, select an existing
+issue and run the suite:
+
+```bash
+OPERATOR_LIVE_GITHUB_ISSUE=51 .venv/bin/python -m pytest -q
+```
+
+The live checks read an issue, handle a real GitHub 404, retry a read after a
+simulated transport timeout, and reject a proposal without writing to GitHub.

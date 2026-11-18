@@ -1,37 +1,63 @@
-"""Shared LangGraph entry point for issue triage."""
+"""LangGraph orchestration shared by the CLI, dashboard, and offline evaluator."""
 import os
 from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
 from langsmith import tracing_context
 
+from agent.stopping import StopLimits
+
 
 class WorkflowState(TypedDict, total=False):
+    next_stage: str
     status: str
 
 
+# Each node resumes the controller at one well-defined operation. Only the
+# route and terminal status enter LangSmith. The transcript and grant stay local.
+TRANSITIONS = {
+    "initialize": ("decision",),
+    "decision": ("investigation", "proposal", "decision"),
+    "investigation": ("decision", "retry"),
+    "retry": ("investigation", "proposal"),
+    "proposal": ("approval",),
+    "approval": ("write", "decision", "retry"),
+    "write": ("email", "verification", "retry"),
+    "email": ("verification",),
+    "verification": ("decision",),
+}
+
+
 def run_triage(agent, request, **options):
-    # Keep issue data, tool results, and approval details outside traced state.
+    steps = agent.workflow_steps(request, **options)
     result = None
     failure = None
 
-    def triage(_state):
+    def advance(_state):
         nonlocal result, failure
         try:
-            result = agent.run(request, **options)
+            return {"next_stage": next(steps)}
+        except StopIteration as completed:
+            result = completed.value
+            return {"next_stage": END, "status": result.status}
         except Exception as error:
             failure = error
-            return {"status": "FAILED"}
-        return {"status": result.status}
+            return {"next_stage": END, "status": "FAILED"}
 
     graph = StateGraph(WorkflowState)
-    graph.add_node("triage", triage)
-    graph.add_edge(START, "triage")
-    graph.add_edge("triage", END)
+    for stage, destinations in TRANSITIONS.items():
+        graph.add_node(stage, advance)
+        graph.add_conditional_edges(stage, lambda state: state["next_stage"], [*destinations, END])
+    graph.add_edge(START, "initialize")
 
+    limits = agent.limits or StopLimits()
+    config = {"run_name": "Operator triage", "recursion_limit": 8 * limits.max_steps + 4}
     tracing_enabled = os.environ.get("LANGSMITH_TRACING", "").lower() == "true"
-    with tracing_context(enabled=tracing_enabled):
-        graph.compile().invoke({}, config={"run_name": "Operator triage"})
+    try:
+        with tracing_context(enabled=tracing_enabled):
+            graph.compile().invoke({}, config=config)
+    finally:
+        steps.close()
     if failure is not None:
         raise failure
     return result

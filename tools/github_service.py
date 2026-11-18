@@ -133,6 +133,15 @@ class GitHubService:
         return logged_call("get_labels", {}, run, context=context, logger=self.logger)
 
     def call(self, tool, arguments, *, task_id="standalone", proposal_id=None, grant=None, context=None):
+        return self._call(tool, arguments, task_id=task_id, proposal_id=proposal_id,
+                          grant=grant, context=context)
+
+    def call_with_deferred_notification(self, tool, arguments, **options):
+        notifications = []
+        result = self._call(tool, arguments, defer_notification=notifications.append, **options)
+        return result, notifications[0] if notifications else None
+
+    def _call(self, tool, arguments, *, task_id, proposal_id, grant, context, defer_notification=None):
         if tool == "list_issues":
             return self.list_issues(**arguments, context=context)
         if tool == "read_issue":
@@ -162,11 +171,18 @@ class GitHubService:
                     db.execute("INSERT INTO operations VALUES (?,?,?,?)", (args.operation_id, tool, request_hash, json.dumps(result)))
             self.approvals.consume(proposal_id)
             if result["ok"] and result["data"].get("changed"):
-                try:
-                    self.notifier.notify(repository=self.scope, issue_number=args.issue_id,
-                                        action=tool, summary=json.dumps(result["data"], ensure_ascii=False))
-                except NotificationError:
-                    return failure("PARTIAL_FAILURE", "GitHub change committed but owner notification failed; verify the change", True)
+                def notify():
+                    try:
+                        self.notifier.notify(repository=self.scope, issue_number=args.issue_id,
+                                            action=tool, summary=json.dumps(result["data"], ensure_ascii=False))
+                    except (NotificationError, OSError, ValueError):
+                        return False
+                    return True
+
+                if defer_notification is not None:
+                    defer_notification(notify)
+                elif not notify():
+                    return failure("PARTIAL_FAILURE", "GitHub change committed but owner notification failed; verify the change")
             return result
         except ApprovalError as error:
             return failure(error.code, str(error))
@@ -193,11 +209,21 @@ class GitHubService:
             labels = list(dict.fromkeys(current + list(args.labels)))
             if labels == current:
                 return {"ok": True, "data": {"issue_id": args.issue_id, "version": current_version, "changed": False, "labels": current}, "error": None}
-            self.client.request("PUT", f"/issues/{args.issue_id}/labels", {"labels": labels})
-            updated = self.client.request("GET", f"/issues/{args.issue_id}")
+            try:
+                self.client.request("PUT", f"/issues/{args.issue_id}/labels", {"labels": labels})
+                updated = self.client.request("GET", f"/issues/{args.issue_id}")
+            except GitHubAPIError as error:
+                if not error.retryable:
+                    raise
+                return failure("PARTIAL_FAILURE", "GitHub write outcome is uncertain. Read the issue before retrying.")
             return {"ok": True, "data": {"issue_id": args.issue_id, "version": _version(updated.get("updated_at")), "changed": True, "labels": labels}, "error": None}
-        comment = self.client.request("POST", f"/issues/{args.issue_id}/comments", {"body": args.body})
-        updated = self.client.request("GET", f"/issues/{args.issue_id}")
+        try:
+            comment = self.client.request("POST", f"/issues/{args.issue_id}/comments", {"body": args.body})
+            updated = self.client.request("GET", f"/issues/{args.issue_id}")
+        except GitHubAPIError as error:
+            if not error.retryable:
+                raise
+            return failure("PARTIAL_FAILURE", "GitHub write outcome is uncertain. Read the issue before retrying.")
         return {"ok": True, "data": {"issue_id": args.issue_id, "version": _version(updated.get("updated_at")), "changed": True, "comment": {"id": comment.get("id"), "body": comment.get("body"), "operation_id": args.operation_id}}, "error": None}
 
     @staticmethod

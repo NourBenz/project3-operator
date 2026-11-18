@@ -21,9 +21,11 @@ The existing SQLite implementation may be preserved for repeatable local tests. 
 ## AGENT-01 - AI controller: PARTIAL
 
 - **DONE:** OpenAI adapter, offline model, tool registry, bounded loop, approval interaction, read-back and CLI were added.
-- **OPEN:** Connect the controller to the real GitHub-backed tools through LangGraph.
-- **OPEN:** Represent investigation, proposal, human approval, write, email and verification as explicit LangGraph state transitions.
-- **OPEN:** Verify real GitHub failures, API timeouts, retries, stopping behavior and live approval.
+- **DONE:** Connect the controller to the real GitHub-backed tools through LangGraph.
+- **DONE:** Represent investigation, proposal, human approval, write, email and verification as explicit LangGraph state transitions.
+- **DONE:** Live GitHub reads, a real 404, retry recovery against GitHub after an injected timeout, and rejection of a proposal built from live issue data.
+- **DONE:** Automated tests verify bounded stopping, approved-write and email ordering, read-back, and sanitized LangSmith stage traces.
+- **OPEN:** Confirm a live approved write through the new graph, SMTP delivery to the intended recipients, and trace ingestion in the LangSmith project.
 
 ## EVAL-03 - Evaluation: PARTIAL
 
